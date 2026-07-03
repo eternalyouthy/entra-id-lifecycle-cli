@@ -1,0 +1,11 @@
+users-pass.txt
+app.txt
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.log
+.pytest_cache/
+.vscode/
+.idea/

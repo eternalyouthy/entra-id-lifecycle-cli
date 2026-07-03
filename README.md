@@ -45,8 +45,3 @@ Required Graph API permissions (**Application**, not Delegated):
 ## Why this exists
 
 Bridging the gap between IAM theory and hands-on Entra ID / Graph API work — this repo tracks that process openly, including what isn't built yet.
-
-
-Why this exists
-
-Bridging the gap between IAM theory and hands-on Entra ID / Graph API work — this repo tracks that process openly, including what isn't built yet.

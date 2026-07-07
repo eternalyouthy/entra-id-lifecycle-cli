@@ -55,7 +55,7 @@ r = requests.post(
 )
 print("Revoke sessions:", r.status_code)  # 200, тело — {"value": true}
 
-# 4. Посмотреть, в каких группах он состоит
+# 4. See which groups he is a member of
 r = requests.get(
     f"https://graph.microsoft.com/v1.0/users/{user_id}/memberOf",
     headers={"Authorization": f"Bearer {token}"},

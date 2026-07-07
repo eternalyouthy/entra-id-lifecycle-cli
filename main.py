@@ -30,7 +30,7 @@ for u in r.json()["value"]:
 
 target_upn = "dmitri.wolf@randompc13556outlook.onmicrosoft.com"
 
-# 1. Найти объект пользователя и его ID
+# 1. Find an object and his ID
 r = requests.get(
     f"https://graph.microsoft.com/v1.0/users/{target_upn}",
     headers={"Authorization": f"Bearer {token}"},

@@ -80,7 +80,7 @@ if group_id:
 else:
     print("No longer in sec-all-employees — skipping membership removal.")
 
-# Проверка: юзер жив и в группе его больше нет
+# Verification: the duration of a person's time in the group exceeds this figure.
 r = requests.get(
     f"https://graph.microsoft.com/v1.0/users/{user_id}/memberOf",
     headers={"Authorization": f"Bearer {token}"},

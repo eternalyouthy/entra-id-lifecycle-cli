@@ -1,30 +1,15 @@
-import os
-from dotenv import load_dotenv
-import requests
 import time
+import requests
+from auth import get_access_token
 
-load_dotenv()
 
-TENANT = os.environ["AZ_TENANT_ID"]
-CLIENT_ID = os.environ["AZ_CLIENT_ID"]
-SECRET = os.environ["AZ_CLIENT_SECRET"]
-
-resp = requests.post(
-    f"https://login.microsoftonline.com/{TENANT}/oauth2/v2.0/token",
-    data={
-        "client_id": CLIENT_ID,
-        "client_secret": SECRET,
-        "scope": "https://graph.microsoft.com/.default",
-        "grant_type": "client_credentials",
-    },
-)
-resp.raise_for_status()
-token = resp.json()["access_token"]
+token = get_access_token()
 
 r = requests.get(
     "https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,department",
     headers={"Authorization": f"Bearer {token}"},
 )
+
 print(r.status_code)
 for u in r.json()["value"]:
     print(u["displayName"], "|", u.get("department"))
@@ -91,11 +76,14 @@ print("Remaining in the groups:", remaining)
 assert "sec-all-employees" not in remaining
 
 # 6. Soft-delete user's
-r = requests.delete(
+"""r = requests.delete(
     f"https://graph.microsoft.com/v1.0/users/{user_id}",
     headers={"Authorization": f"Bearer {token}"},
 )
-print("Soft-delete:", r.status_code)  # waiting 204
+print("Soft-delete:", r.status_code)  # waiting 204"""
+
+# User deletion is intentionally disabled for safety reasons
+print("Soft-delete: DISABLED (safety reasons)")
 
 
 def wait_for_group_removal(user_id, group_display_name, token, attempts=5, delay=3):

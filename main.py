@@ -1,29 +1,41 @@
 import time
 import requests
+
 from auth import get_access_token
+from graph_client import GraphClient
 
 
 token = get_access_token()
+graph = GraphClient(token)
 
-r = requests.get(
-    "https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,department",
-    headers={"Authorization": f"Bearer {token}"},
+# Retrieving the list of users
+data = graph.get(
+    "/users",
+    params={
+        "$select": "displayName,userPrincipalName,department",
+    },
 )
 
-print(r.status_code)
-for u in r.json()["value"]:
-    print(u["displayName"], "|", u.get("department"))
+for user in data["value"]:
+    print(
+        user["displayName"],
+        "|",
+        user.get("department"),
+    )
 
 target_upn = "dmitri.wolf@randompc13556outlook.onmicrosoft.com"
 
-# 1. Find an object and his ID
-r = requests.get(
-    f"https://graph.microsoft.com/v1.0/users/{target_upn}",
-    headers={"Authorization": f"Bearer {token}"},
+# 1. Retrieve a specific user
+user = graph.get(
+    f"/users/{target_upn}",
+    params={
+        "$select": "id,displayName,userPrincipalName",
+    },
 )
-r.raise_for_status()
-user = r.json()
+
+# Extract the user's string ID.
 user_id = user["id"]
+
 print(f"Найден: {user['displayName']} | id={user_id}")
 
 # 2. Disable account

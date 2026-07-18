@@ -15,11 +15,14 @@ class GraphClient:
             }
         )
 
-    def get(self, endpoint, params=None):
+    def _build_url(self, endpoint):
         if endpoint.startswith("https://"):
-            url = endpoint
-        else:
-            url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
+            return endpoint
+
+        return f"{self.BASE_URL}/{endpoint.lstrip('/')}"
+
+    def get(self, endpoint, params=None):
+        url = self._build_url(endpoint)
 
         response = self.session.get(
             url,
@@ -29,3 +32,38 @@ class GraphClient:
         response.raise_for_status()
 
         return response.json()
+
+    def patch(self, endpoint, json=None):
+        url = self._build_url(endpoint)
+
+        response = self.session.patch(
+            url,
+            json=json,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+
+        return response
+
+    def post(self, endpoint, json=None):
+        url = self._build_url(endpoint)
+
+        response = self.session.post(
+            url,
+            json=json,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+
+        return response
+
+    def delete(self, endpoint):
+        url = self._build_url(endpoint)
+
+        response = self.session.delete(
+            url,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+
+        return response

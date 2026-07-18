@@ -1,5 +1,4 @@
 import time
-import requests
 
 from auth import get_access_token
 from graph_client import GraphClient
@@ -36,32 +35,30 @@ user = graph.get(
 # Extract the user's string ID.
 user_id = user["id"]
 
-print(f"Найден: {user['displayName']} | id={user_id}")
+print(f"Found: {user['displayName']} | id={user_id}")
 
 # 2. Disable account
-r = requests.patch(
-    f"https://graph.microsoft.com/v1.0/users/{user_id}",
-    headers={"Authorization": f"Bearer {token}"},
+r = graph.patch(
+    f"/users/{user_id}",
     json={"accountEnabled": False},
 )
-print("Disable:", r.status_code)  # ожидаем 204 No Content
+print("Disable:", r.status_code)  # waiting 204 No Content
 
 # 3. Revoke sign-in sessions
-r = requests.post(
-    f"https://graph.microsoft.com/v1.0/users/{user_id}/revokeSignInSessions",
-    headers={"Authorization": f"Bearer {token}"},
+r = graph.post(
+    f"/users/{user_id}/revokeSignInSessions",
 )
-print("Revoke sessions:", r.status_code)  # 200, тело — {"value": true}
+print("Revoke sessions:", r.status_code)  # 200, body — {"value": true}
 
 # 4. See which groups he is a member of
-r = requests.get(
-    f"https://graph.microsoft.com/v1.0/users/{user_id}/memberOf",
-    headers={"Authorization": f"Bearer {token}"},
+data = graph.get(
+    f"/users/{user_id}/memberOf",
 )
-r.raise_for_status()
-groups = r.json()["value"]
+
+groups = data["value"]
+
 for g in groups:
-    print("Группа:", g.get("displayName"), g.get("id"))
+    print("Group:", g.get("displayName"), g.get("id"))
 
 # 5. Find the ID of the sec-all-employees group and remove the membership.
 group_id = next(
@@ -69,48 +66,50 @@ group_id = next(
 )
 
 if group_id:
-    r = requests.delete(
-        f"https://graph.microsoft.com/v1.0/groups/{group_id}/members/{user_id}/$ref",
-        headers={"Authorization": f"Bearer {token}"},
+    r = graph.delete(
+        f"/groups/{group_id}/members/{user_id}/$ref",
     )
     print("Remove from group:", r.status_code)
 else:
     print("No longer in sec-all-employees — skipping membership removal.")
 
-# Verification: the duration of a person's time in the group exceeds this figure.
-r = requests.get(
-    f"https://graph.microsoft.com/v1.0/users/{user_id}/memberOf",
-    headers={"Authorization": f"Bearer {token}"},
-)
-r.raise_for_status()
-remaining = [g.get("displayName") for g in r.json()["value"]]
-print("Remaining in the groups:", remaining)
-assert "sec-all-employees" not in remaining
-
 # 6. Soft-delete user's
-"""r = requests.delete(
-    f"https://graph.microsoft.com/v1.0/users/{user_id}",
-    headers={"Authorization": f"Bearer {token}"},
+"""
+r = graph.delete(
+    f"/users/{user_id}",
 )
-print("Soft-delete:", r.status_code)  # waiting 204"""
+print("Soft-delete:", r.status_code)  # Expected: 204 No Content
+"""
 
 # User deletion is intentionally disabled for safety reasons
 print("Soft-delete: DISABLED (safety reasons)")
 
 
-def wait_for_group_removal(user_id, group_display_name, token, attempts=5, delay=3):
-    for i in range(attempts):
-        r = requests.get(
-            f"https://graph.microsoft.com/v1.0/users/{user_id}/memberOf",
-            headers={"Authorization": f"Bearer {token}"},
+def wait_for_group_removal(
+    graph,
+    user_id,
+    group_display_name,
+    attempts=5,
+    delay=3,
+):
+    for _ in range(attempts):
+        data = graph.get(
+            f"/users/{user_id}/memberOf",
         )
-        r.raise_for_status()
-        remaining = [g.get("displayName") for g in r.json()["value"]]
+
+        remaining = [g.get("displayName") for g in data["value"]]
+
         if group_display_name not in remaining:
             return True
+
         time.sleep(delay)
+
     return False
 
 
-if not wait_for_group_removal(user_id, "sec-all-employees", token):
+if not wait_for_group_removal(
+    graph,
+    user_id,
+    "sec-all-employees",
+):
     print("Note: The change has not yet been replicated — check manually later.")

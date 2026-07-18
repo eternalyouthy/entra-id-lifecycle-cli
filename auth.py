@@ -1,6 +1,4 @@
 import os
-from typing import Any
-
 import msal
 from dotenv import load_dotenv
 
@@ -10,7 +8,7 @@ load_dotenv()
 SCOPES = ["https://graph.microsoft.com/.default"]
 
 
-def get_access_token() -> Any:
+def get_access_token() -> str:
     tenant_id = os.environ["AZ_TENANT_ID"]
     client_id = os.environ["AZ_CLIENT_ID"]
     client_secret = os.environ["AZ_CLIENT_SECRET"]
@@ -24,5 +22,11 @@ def get_access_token() -> Any:
     )
 
     result = app.acquire_token_for_client(scopes=SCOPES)
+
+    if "access_token" not in result:
+        raise RuntimeError(
+            f"Не удалось получить токен: {result.get('error')} — "
+            f"{result.get('error_description')}"
+        )
 
     return result["access_token"]

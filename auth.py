@@ -25,7 +25,7 @@ def get_access_token() -> str:
 
     if "access_token" not in result:
         raise RuntimeError(
-            f"Не удалось получить токен: {result.get('error')} — "
+            f"Failed to retrieve token: {result.get('error')} — "
             f"{result.get('error_description')}"
         )
 

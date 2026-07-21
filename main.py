@@ -4,6 +4,36 @@ from auth import get_access_token
 from graph_client import GraphClient
 
 
+def offboard_user(graph, selected_user):
+    user_id = selected_user["id"]
+
+    print(f"Starting offboarding for {selected_user['displayName']} | id={user_id}")
+
+    r = graph.patch(
+        f"/users/{user_id}",
+        json={"accountEnabled": False},
+    )
+
+    print("Disable:", r.status_code)  # waiting 204 No Content
+
+    response = graph.post(
+        f"/users/{user_id}/revokeSignInSessions",
+    )
+
+    print("Revoke sessions:", response.status_code)  # 200, body — {"value": true}
+
+    data = graph.get(
+        f"/users/{user_id}/memberOf",
+    )
+
+    groups = data["value"]
+
+    for group in groups:
+        print("Group:", group.get("displayName"), group.get("id"))
+
+    return user_id, groups
+
+
 token = get_access_token()
 graph = GraphClient(token)
 
@@ -11,54 +41,63 @@ graph = GraphClient(token)
 data = graph.get(
     "/users",
     params={
-        "$select": "displayName,userPrincipalName,department",
+        "$select": "id,displayName,userPrincipalName,department",
     },
 )
 
-for user in data["value"]:
+users = data["value"]
+
+for number, user in enumerate(users, start=1):
     print(
+        number,
+        "|",
         user["displayName"],
+        "|",
+        user["userPrincipalName"],
         "|",
         user.get("department"),
     )
 
-target_upn = "dmitri.wolf@randompc13556outlook.onmicrosoft.com"
+error_message = f"Enter a whole number from 1 to {len(users)}."
 
-# 1. Retrieve a specific user
-user = graph.get(
-    f"/users/{target_upn}",
-    params={
-        "$select": "id,displayName,userPrincipalName",
-    },
+while True:
+    choice = input("\nChoose user number: ")
+
+    try:
+        choice_number = int(choice)
+    except ValueError:
+        print(error_message)
+        continue
+
+    if 1 <= choice_number <= len(users):
+        break
+
+    print(error_message)
+
+choice_index = choice_number - 1
+selected_user = users[choice_index]
+
+print("Selected user ID:", selected_user["id"])
+
+print(
+    "Selected:",
+    selected_user["displayName"],
+    "|",
+    selected_user["userPrincipalName"],
 )
 
-# Extract the user's string ID.
-user_id = user["id"]
-
-print(f"Found: {user['displayName']} | id={user_id}")
-
-# 2. Disable account
-r = graph.patch(
-    f"/users/{user_id}",
-    json={"accountEnabled": False},
-)
-print("Disable:", r.status_code)  # waiting 204 No Content
-
-# 3. Revoke sign-in sessions
-r = graph.post(
-    f"/users/{user_id}/revokeSignInSessions",
-)
-print("Revoke sessions:", r.status_code)  # 200, body — {"value": true}
-
-# 4. See which groups he is a member of
-data = graph.get(
-    f"/users/{user_id}/memberOf",
+confirmation = input(
+    f"\nType OFFBOARD to continue with {selected_user['displayName']}: "
 )
 
-groups = data["value"]
+if confirmation.strip().upper() != "OFFBOARD":
+    print("Operation cancelled.")
+    raise SystemExit
 
-for g in groups:
-    print("Group:", g.get("displayName"), g.get("id"))
+print("Confirmation accepted. Starting offboarding.")
+
+# Run the offboarding workflow
+user_id, groups = offboard_user(graph, selected_user)
 
 # 5. Find the ID of the sec-all-employees group and remove the membership.
 group_id = next(

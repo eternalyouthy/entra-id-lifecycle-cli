@@ -28,10 +28,19 @@ def offboard_user(graph, selected_user):
 
     groups = data["value"]
 
+    group_id = next(
+        (
+            group["id"]
+            for group in groups
+            if group.get("displayName") == "sec-all-employees"
+        ),
+        None,
+    )
+
+    return user_id, group_id
+
     for group in groups:
         print("Group:", group.get("displayName"), group.get("id"))
-
-    return user_id, groups
 
 
 token = get_access_token()
@@ -97,12 +106,7 @@ if confirmation.strip().upper() != "OFFBOARD":
 print("Confirmation accepted. Starting offboarding.")
 
 # Run the offboarding workflow
-user_id, groups = offboard_user(graph, selected_user)
-
-# 5. Find the ID of the sec-all-employees group and remove the membership.
-group_id = next(
-    (g["id"] for g in groups if g.get("displayName") == "sec-all-employees"), None
-)
+user_id, group_id = offboard_user(graph, selected_user)
 
 if group_id:
     r = graph.delete(
